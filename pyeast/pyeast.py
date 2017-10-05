@@ -95,14 +95,9 @@ class StarterClientEngine(StartableClientEnginify):
 
 class BrowserNiviguate(Browserify):
 
-    def __init__(self, url, client: StartableClientEnginify, version="Firefox"):
+    def __init__(self, version="Firefox"):
         self.client = client
-        self.url = url
         self.version = version
-
-    def naviguate(self):
-         # Dissociate, callable have to pass itself and call it with url
-        self.client.if_warmup_do(self.url, lambda client: client.start(self.url, self.version))
 
 class LighterBrowser(Browserify):
 
@@ -119,17 +114,7 @@ class Naviguate():
     def browse(self, url):
         """Little call """
 
-        BrowserNiviguate(
-            url,
-            StarterClientEngine(
-                EngineMaker(
-                    MessagerFactory(
-                        Messager()
-                    )
-                ).warmup_engine(5)
-            )
-        ).naviguate()
-
+        StarterClientEngine(BrowserNiviguate("Internet Exlorer") ).if_warmup_do(url, lambda browser: )
 
         return self
 
