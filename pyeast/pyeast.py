@@ -174,17 +174,17 @@ class LighterBrowser(Browserify):
 
 class Naviguate():
 
-    def browse(self, url):
+    def browse(self, urlSearch: str):
         """Little call """
 
         StarterClientEngine(
             BrowserNiviguate("Internet Explorer").if_warmup_do(
-                url,
-                lambda clientEngine: UrlNormilizer(clientEngine).if_normalize_do(
-
-                    lambda urlNormilizer: SimpleFormatter(urlNormilizer).to_json(
-
-                        lambda formatter : Printer(formatter).print_on(
+                urlSearch,
+                lambda url: UrlNormilizer().if_normalize_do(
+                    url,
+                    lambda urlNormilizer: SimpleFormatter().format_to_json(
+                        urlNormilizer,
+                        lambda formatterJson : Printer(formatterJson).print_on(
                             sys.out
                         )
                     )
