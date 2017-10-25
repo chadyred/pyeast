@@ -16,7 +16,7 @@ class UrlValue(object):
 class StartableClient(metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
-    def start(self, browser: 'Browserify', url: 'Url') -> 'StartableClient':
+    def start_browser_with(self, browser: 'Browserify', url: 'Url') -> 'StartableClient':
         """when start show message"""
 
 class StartableClientEnginify(StartableClient):
@@ -80,7 +80,7 @@ class Url(metaclass=abc.ABCMeta):
 
 class Browserify(metaclass=abc.ABCMeta):
 
-    def naviguate(self):
+    def browse_with(self, client: 'StartableClient', url: 'Url') -> 'Browserify':
         """Naviguate"""
 
 class Printer(metaclass=abc.ABCMeta):
@@ -90,7 +90,9 @@ class Printer(metaclass=abc.ABCMeta):
 
 class StarterClient(StartableClient):
 
-    def start(self, browser: 'Browserify', url: 'Url') -> 'StartableClient':
+    def start_browser_with(self, browser: 'Browserify', url: 'Url') -> 'StartableClient':
+        """Just show URL"""
+
         print(url)
 
 class Messager(Messagerable):
@@ -111,14 +113,6 @@ class EngineMaker(EngineMakerInterface):
 
     def __init__(self, messagerFactory: MessageFactoring):
         self.messagerFactory = messagerFactory
-
-    # Move to browser (command)
-    def if_warmup_do(self, startableEngine: 'StartableClientEnginify', browser: 'Browserify', url: 'Url', action: Callable[['StartableClient', 'Browserify', 'Url'], None]) -> 'EngineMakerInterface':
-
-        browser.warmup_with(self, url)
-        action(startableEngine, browser, url)
-
-        return self
 
     def warmup_browser(self, browser: 'Browserify', url: 'Url') -> 'EngineMakerInterface':
 
@@ -142,7 +136,7 @@ class SimpleStarterclient(StartableClient):
     def __init__(self, messageFactory: MessagerFactory):
         self.messagerFactory = messageFactory
 
-    def start(self, browser: 'Browserify', url: 'Url') -> 'StartableClient':
+    def start_browser_with(self, browser: 'Browserify', url: 'Url') -> 'StartableClient':
 
         ( lambda message : self.messagerFactory.message(message) )(
             str("Browser start through " + url._url + " on " + browser.version)
@@ -209,7 +203,7 @@ class StarterClientEngine(StartableClientEnginify):
 
         return self
 
-    def start(self, browser: 'Browserify', url: 'Url') -> 'StartableClient':
+    def start_browser_with(self, browser: 'Browserify', url: 'Url') -> 'StartableClient':
 
         ( lambda message : self.messagerFactory.message(message) )(
             str("Browser start through " + url._normlized_url + " on " + browser.version)
@@ -219,35 +213,27 @@ class StarterClientEngine(StartableClientEnginify):
 
         return self
 
-class BrowserNiviguate(Browserify):
+class BrowserNaviguate(Browserify):
 
-    def __init__(self, version="Firefox", loadingTime=5):
+    def __init__(self, version="firefox", loadingTime=5):
         self.version = version
         self.loadingTime = loadingTime
 
-    def warmup_with(self, engineMaker: 'EngineMakerInterface', url : 'Url') -> 'Browserify':
+    def if_warmup_do(self, engineMaker: 'EngineMakerInterface', startableEngine: 'StartableClientEnginify', url: 'Url', action: Callable[['StartableClient', 'Browserify', 'Url'], None]) -> 'Browserify':
 
         engineMaker.warmup_browser(self, url)
+        action(startableEngine, self, url)
 
         return self
 
-    def start_with(self, clientStartable: 'StartableClient', url : 'Url'):
+    def browse_with(self, clientStartable: 'StartableClient', url : 'Url'):
 
-        clientStartable.start(self, url)
-
-        return self
-
-
-class LighterBrowser(Browserify):
-
-    def naviguate(self, client: 'StartableClient', browser: 'Browserify', url: 'Url') -> 'Browserify':
-
-        client.start(browser, url)
+        clientStartable.start_browser_with(self, url)
 
         return self
 
 class JsonFormatter(SimpleJsonFormatter):
-
+    """Class which format url - todo : format result"""
 
     def format_url(self, url: 'Url', action: Callable[['Url'], None]) -> str:
 
@@ -274,50 +260,60 @@ class Naviguate():
     def format(self, naviguator: str, urlSearch: str):
         """Little call """
 
-        StarterClientEngine(
+        BrowserNaviguate(naviguator).if_warmup_do(
             EngineMaker(
                 MessagerFactory(
                     Messager()
                 )
             ),
-            MessagerFactory(
-                Messager()
-            )
-        ).warm_up_and_do(
-                BrowserNiviguate(naviguator),
-                ExampleUrl(urlSearch),
-                lambda starterClient, browser, url: url.if_normalize_do(
-                    UrlNormalize(),
-                    lambda urlWellNormalize: urlWellNormalize.if_format_do(
-                        JsonFormatter(),
-                        lambda urlWellJsonFormat : urlWellJsonFormat.print_with_on(
-                            Print(),
-                            sys.stdout
-                        )
+            StarterClientEngine(
+                EngineMaker(
+                    MessagerFactory(
+                        Messager()
+                    )
+                ),
+                MessagerFactory(
+                    Messager()
+                )
+            ),
+            ExampleUrl(urlSearch),
+            lambda starterClient, browser, url: url.if_normalize_do(
+                UrlNormalize(),
+                lambda urlWellNormalize: urlWellNormalize.if_format_do(
+                    JsonFormatter(),
+                    lambda urlWellJsonFormat : urlWellJsonFormat.print_with_on(
+                        Print(),
+                        sys.stdout
                     )
                 )
             )
+        )
 
         return self
 
     def browse(self, naviguator: str, urlSearch: str):
-        """Little call """
+    """Use it to do simple search, with normalized URL with 'http://'"""
 
-        StarterClientEngine(
+        BrowserNaviguate(naviguator).if_warmup_do(
             EngineMaker(
                 MessagerFactory(
                     Messager()
                 )
             ),
-            MessagerFactory(
-                Messager()
-            )
-        ).warm_up_and_do(
-            BrowserNiviguate(naviguator),
+            StarterClientEngine(
+                EngineMaker(
+                    MessagerFactory(
+                        Messager()
+                    )
+                ),
+                MessagerFactory(
+                    Messager()
+                )
+            ),
             ExampleUrl(urlSearch),
             lambda starterClient, browser, url: url.if_normalize_do(
                 UrlNormalize(),
-                lambda urlWellNormalize: browser.start_with(starterClient, urlWellNormalize)
+                lambda urlWellNormalize: browser.browse_with(starterClient, urlWellNormalize)
             )
         )
 
@@ -325,14 +321,17 @@ class Naviguate():
         return self
 
     def simple_browser(self, naviguator: str, urlSearch: str):
+    """Use it to do simple search, no normalized URL, it's free"""
 
-        LighterBrowser().naviguate(
+        BrowserNaviguate(
+            naviguator,
+            0
+        ).browse_with(
             SimpleStarterclient(
                 MessagerFactory(
                     Messager()
                 )
             ),
-            BrowserNiviguate(naviguator),
             ExampleUrl(urlSearch)
         )
 
