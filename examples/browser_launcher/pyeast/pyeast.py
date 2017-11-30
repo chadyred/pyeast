@@ -56,6 +56,10 @@ class SimpleJsonFormatter(metaclass=abc.ABCMeta):
     def format_url(self, url: 'Url', action: Callable[['Url'], None]) -> str:
         """Message factoring"""
 
+    @abc.abstractmethod
+    def format_body(self, body: 'PageBody', action: Callable[['PageBody'], None]) -> str:
+        """Message factoring"""
+
 class Url(metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
@@ -77,6 +81,12 @@ class Url(metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def print_with_on(self, printer: 'Printer', stream: IO[str]) -> 'Url':
         """Print"""
+
+class PageBody(metaclass=abc.ABCMeta):
+
+    @abc.abstractmethod
+    def format_json_with(self, jsonFormatter: 'SimpleJsonFormatter') -> 'PageBody':
+        """Format"""
 
 class Browserify(metaclass=abc.ABCMeta):
 
@@ -241,7 +251,7 @@ class JsonFormatter(SimpleJsonFormatter):
 
         return self
 
-    def to_json(self, url: 'Url'):
+    def format_page(self, page: 'Page', action: Callable[['Page'], None]) -> str:
 
         url.formatted_json = json.dumps({'url': url._normlized_url }) + '\n'
 
