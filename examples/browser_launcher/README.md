@@ -1,6 +1,6 @@
 # Browser launcher
 
-This is a simple browser launcher with east oriented. We indicate your browser like in 'main.py' like:
+This is a simple browser launcher with East Oriented. We indicate your browser like in 'main.py' like:
 
 
 * Naviguate().simple_browser(browser, url FQDN);

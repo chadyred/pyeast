@@ -6,6 +6,8 @@ from typing import Callable, IO, cast
 import shutil
 import webbrowser
 
+from urllib.request import urlopen
+
 import attr
 
 @attr.s
@@ -63,7 +65,7 @@ class SimpleJsonFormatter(metaclass=abc.ABCMeta):
         """Message factoring"""
 
     @abc.abstractmethod
-    def format_body(self, body: 'PageBody', action: Callable[['PageBody'], None]) -> str:
+    def format_body(self, body: 'BodyParser', action: Callable[['BodyParser'], None]) -> 'SimpleJsonFormatter':
         """Message factoring"""
 
 class Url(metaclass=abc.ABCMeta):
@@ -88,13 +90,13 @@ class Url(metaclass=abc.ABCMeta):
     def print_with_on(self, printer: 'Printer', stream: IO[str]) -> 'Url':
         """Print"""
 
-class PageBody(metaclass=abc.ABCMeta):
+class BodyParser(metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
-    def format_body_json_with(self, jsonFormatter: 'SimpleJsonFormatter', action: Callable[[str], None]) -> 'PageBody':
+    def format_body_json_with(self, body: str, jsonFormatter: 'SimpleJsonFormatter', action: Callable[[str], None]) -> 'BodyParser':
         """Format body received to json"""
 
-    def get_page_with(self, url: 'Url', requester: 'Requester', action: Callable[[str], None]) -> 'PageBody':
+    def get_page_with(self, url: 'Url', requester: 'Requester', action: Callable[[str], None]) -> 'BodyParser':
         """Get page request as is"""
 
 class Browserify(metaclass=abc.ABCMeta):
@@ -254,17 +256,23 @@ class BrowserNaviguate(Browserify):
 class JsonFormatter(SimpleJsonFormatter):
     """Class which format url - todo : format result"""
 
+    def __init__(self, messagerFactory: MessageFactoring):
+
+        self.messagerFactory = messagerFactory
+
     def format_url(self, url: 'Url', action: Callable[['Url'], None]) -> 'SimpleJsonFormatter':
 
         action(url.format_json_with(self)) # Always return self (rule 1)
 
         return self
 
-    def format_page(self, page: 'PageBody', action: Callable[['PageBody'], None]) -> 'SimpleJsonFormatter':
+    def format_body(self, body: str, action: Callable[['BodyParser'], None]) -> 'SimpleJsonFormatter':
 
-        page.formatted_json = json.dumps({'body': page.body }) + '\n'
+        ( lambda message : self.messagerFactory.message(message) )(
+            "Type du body : " + str(type(body))
+        )
 
-        action(page)
+        action(json.dumps({'body': str(body) }) + '\n')
 
         return self
 
@@ -276,21 +284,19 @@ class Print(Printer):
 
         return self
 
-class OnePageBody(PageBody):
+class OneBodyParser(BodyParser):
 
-    def get_page_with(self, url: 'Url', requester: 'Requester', action: Callable[[str], None]) -> 'PageBody':
+    def get_page_with(self, url: 'Url', requester: 'Requester', action: Callable[[str], None]) -> 'BodyParser':
         """Request page to get content"""
 
-        result = requester.do_request_with(self, url)
-        action(result)
+        requester.do_request_with(url, lambda html: action(html))
 
         return self
 
-    def format_body_json_with(self, body: str, jsonFormatter: 'SimpleJsonFormatter', action: Callable[[str], None]) -> 'PageBody':
+    def format_body_json_with(self, body: str, jsonFormatter: 'SimpleJsonFormatter', action: Callable[[str], None]) -> 'BodyParser':
         """Parse body content"""
 
-        result = jsonFormatter.format_body(body)
-        action(result)
+        jsonFormatter.format_body(body, lambda result: action(result))
 
         return self
 
@@ -300,7 +306,8 @@ class MyRequester(Requester):
     def do_request_with(self, url: 'Url', action: Callable[[str], None]) -> 'Requester':
 
         # Request to external site and whole information is here
-        # action(function(url)))
+        html = urlopen(url._url).read()
+        action(html)
 
         return self
 
@@ -341,7 +348,7 @@ class Naviguate():
         return self
 
     def browse(self, naviguator: str, urlSearch: str):
-    """Use it to do simple search, with normalized URL with 'http://'"""
+        """Use it to do simple search, with normalized URL with 'http://'"""
 
         BrowserNaviguate(naviguator).if_warmup_do(
             EngineMaker(
@@ -370,7 +377,7 @@ class Naviguate():
         return self
 
     def simple_browser(self, naviguator: str, urlSearch: str):
-    """Use it to do simple search, no normalized URL, it's free"""
+        """Use it to do simple search, no normalized URL, it's free"""
 
         BrowserNaviguate(
             naviguator,
@@ -388,18 +395,22 @@ class Naviguate():
         return self
 
 
-    def give_me_body(self, urlSearch: str):
-    """Use it to do simple search, no normalized URL, it's free"""
+    def parse_body(self, urlSearch: str):
+        """Use it to parse body"""
 
-        OnePageBody()
-            .get_page_with(
-                urlSearch,
-                MyRequester(),
-                lambda result : OnePageBody().format_body_json_with(
+        OneBodyParser(
+            ).get_page_with(
+            ExampleUrl(urlSearch),
+            MyRequester(),
+            lambda result : OneBodyParser().format_body_json_with(
                     result,
-                    SimpleJsonFormatter(),
+                    JsonFormatter(
+                        MessagerFactory(
+                            Messager()
+                        )
+                    ),
                     lambda result: print(result)
-                )
             )
+        )
 
         return self
