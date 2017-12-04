@@ -50,6 +50,12 @@ class UrlNormalizer(metaclass=abc.ABCMeta):
     def normalize_url(self, url: 'Url') -> 'UrlNormalizer':
         """Normalize url given"""
 
+class Requester(metaclass=abc.ABCMeta):
+
+    @abc.abstractmethod
+    def do_request_with(self, url: 'Url') -> 'Requester':
+        """Normalize url given"""
+
 class SimpleJsonFormatter(metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
@@ -85,8 +91,11 @@ class Url(metaclass=abc.ABCMeta):
 class PageBody(metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
-    def format_json_with(self, jsonFormatter: 'SimpleJsonFormatter') -> 'PageBody':
-        """Format"""
+    def format_body_json_with(self, jsonFormatter: 'SimpleJsonFormatter', action: Callable[[str], None]) -> 'PageBody':
+        """Format body received to json"""
+
+    def get_page_with(self, url: 'Url', requester: 'Requester', action: Callable[[str], None]) -> 'PageBody':
+        """Get page request as is"""
 
 class Browserify(metaclass=abc.ABCMeta):
 
@@ -245,15 +254,17 @@ class BrowserNaviguate(Browserify):
 class JsonFormatter(SimpleJsonFormatter):
     """Class which format url - todo : format result"""
 
-    def format_url(self, url: 'Url', action: Callable[['Url'], None]) -> str:
+    def format_url(self, url: 'Url', action: Callable[['Url'], None]) -> 'SimpleJsonFormatter':
 
         action(url.format_json_with(self)) # Always return self (rule 1)
 
         return self
 
-    def format_page(self, page: 'Page', action: Callable[['Page'], None]) -> str:
+    def format_page(self, page: 'PageBody', action: Callable[['PageBody'], None]) -> 'SimpleJsonFormatter':
 
-        url.formatted_json = json.dumps({'url': url._normlized_url }) + '\n'
+        page.formatted_json = json.dumps({'body': page.body }) + '\n'
+
+        action(page)
 
         return self
 
@@ -262,6 +273,34 @@ class Print(Printer):
     def print_with(self, url : 'Url', stream: IO[str]) -> 'Printer':
 
         stream.write(url.formatted_json)
+
+        return self
+
+class OnePageBody(PageBody):
+
+    def get_page_with(self, url: 'Url', requester: 'Requester', action: Callable[[str], None]) -> 'PageBody':
+        """Request page to get content"""
+
+        result = requester.do_request_with(self, url)
+        action(result)
+
+        return self
+
+    def format_body_json_with(self, body: str, jsonFormatter: 'SimpleJsonFormatter', action: Callable[[str], None]) -> 'PageBody':
+        """Parse body content"""
+
+        result = jsonFormatter.format_body(body)
+        action(result)
+
+        return self
+
+
+class MyRequester(Requester):
+
+    def do_request_with(self, url: 'Url', action: Callable[[str], None]) -> 'Requester':
+
+        # Request to external site and whole information is here
+        # action(function(url)))
 
         return self
 
@@ -345,5 +384,22 @@ class Naviguate():
             ExampleUrl(urlSearch)
         )
 
+
+        return self
+
+
+    def give_me_body(self, urlSearch: str):
+    """Use it to do simple search, no normalized URL, it's free"""
+
+        OnePageBody()
+            .get_page_with(
+                urlSearch,
+                MyRequester(),
+                lambda result : OnePageBody().format_body_json_with(
+                    result,
+                    SimpleJsonFormatter(),
+                    lambda result: print(result)
+                )
+            )
 
         return self
