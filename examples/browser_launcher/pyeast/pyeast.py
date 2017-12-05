@@ -5,6 +5,7 @@ import time, json, sys
 from typing import Callable, IO, cast
 import shutil
 import webbrowser
+from messager import Messager, MessagerTemplate
 
 from urllib.request import urlopen
 
@@ -32,19 +33,6 @@ class EngineMakerInterface(metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def warmup_browser(self, browser: 'Browserify', url: 'Url') -> 'EngineMakerInterface':
         """Allow warmup to not ript engine"""
-
-class Messagerable(metaclass=abc.ABCMeta):
-
-    @abc.abstractmethod
-    def print_with_on(self, message: str, messagerTemplate : 'MessagerTemplate', stream: IO[str]) -> 'Messagerable':
-        """Message factoring"""
-
-
-class MessageTemplating(metaclass=abc.ABCMeta):
-
-    @abc.abstractmethod
-    def format_message(self, message: 'Messagerable') -> str:
-        """Message factoring"""
 
 class UrlNormalizer(metaclass=abc.ABCMeta):
 
@@ -119,23 +107,6 @@ class StarterClient(StartableClient):
 
         print(url)
 
-class Messager(Messagerable):
-
-    def print_with_on(self, message: str, messagerTemplate : 'MessageTemplating', stream: IO[str]) -> str:
-
-        (lambda message_formatted: stream.write(message_formatted))(
-            messagerTemplate.format_message(message)
-        )
-
-        return self
-
-class MessagerTemplate(MessageTemplating):
-
-    def format_message(self, message: str) -> str:
-        """Show """
-
-        return "Notice : " + message + '\n'
-
 class EngineMaker(EngineMakerInterface):
 
     def warmup_browser(self, browser: 'Browserify', url: 'Url') -> 'EngineMakerInterface':
@@ -174,6 +145,7 @@ class SimpleStarterclient(StartableClient):
 class ExampleUrl(Url):
 
     def __init__(self, url: str):
+
         self._url = url
         self._normlized_url = url
         self.formatted_json = ''
@@ -184,9 +156,9 @@ class ExampleUrl(Url):
 
         return self
 
-    def if_format_do(self, jsonFormatter: 'SimpleJsonFormatter', action: Callable[[str], None]) -> 'Url':
+    def if_format_do(self, jsonFormatter: 'SimpleJsonFormatter', action: Callable[['Url'], None]) -> 'Url':
 
-        action(self.format_json_with(jsonFormatter)) # We could happen url directly or attr.s
+        self.format_json_with(jsonFormatter, action) # We could happen url directly or attr.s
 
         return self
 
@@ -196,9 +168,9 @@ class ExampleUrl(Url):
 
         return self # Rules 1 : return self
 
-    def format_json_with(self, jsonFormatter: 'SimpleJsonFormatter'):
+    def format_json_with(self, jsonFormatter: 'SimpleJsonFormatter',  action: Callable[['Url'], None]) -> 'Url':
 
-        self.formatted_json = jsonFormatter.format_url(self) # Rules 2 : commands
+        jsonFormatter.format_url(self, lambda result: action(result)) # Rules 2 : commands
 
         return self # Rules 1 : return self
 
@@ -261,14 +233,18 @@ class BrowserNaviguate(Browserify):
 class JsonFormatter(SimpleJsonFormatter):
     """Class which format url - todo : format result"""
 
-    def format_url(self, url: 'Url') -> str:
+    def format_url(self, url: 'Url', action: Callable[[str], None]) -> 'SimpleJsonFormatter':
 
-        return json.dumps({'url': url._url }) # Todo : use action to pass value and change header for caller to give value through action
+        url.formatted_json = json.dumps({'url': url._url }) + '\n'
+
+        action(url)
+
+        return self # Todo : use action to pass value and change header for caller to give value through action
 
     def format_body(self, body: str, action: Callable[['BodyParser'], None]) -> 'SimpleJsonFormatter':
 
         Messager().print_with_on(
-            "Type du body : " + str(type(body)),
+            "Body type: " + str(type(body)),
             MessagerTemplate(),
             sys.stdout
         )
