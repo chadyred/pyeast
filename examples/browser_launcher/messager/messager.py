@@ -10,12 +10,12 @@ class MessageTemplating(metaclass=abc.ABCMeta):
 class Messagerable(metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
-    def print_with_on(self, message: str, messagerTemplate : 'MessagerTemplate', stream: IO[str]) -> 'Messagerable':
+    def print_with_on(self, message: str, messagerTemplate : 'MessageTemplating', stream: IO[str]) -> 'Messagerable':
         """Message factoring"""
 
 class Messager(Messagerable):
 
-    def print_with_on(self, message: str, messagerTemplate : 'MessageTemplating', stream: IO[str]) -> str:
+    def print_with_on(self, message: str, messagerTemplate : 'MessageTemplating', stream: IO[str]) -> 'Messagerable':
 
         messagerTemplate.format_message(
             message,
