@@ -11,6 +11,15 @@ Two package are available:
 * pyeast : the core;
 * messager : for messaging (like notice).
 
+It could be useful to parse body through:
+
+* Naviguate().parse_body(Url).
+
+Two package are available:
+
+* pyeast : the core;
+* messager : for messaging (like notice).
+
 Todo: 
 
 * More 'idempotent' for data encapsulation;
