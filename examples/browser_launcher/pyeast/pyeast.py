@@ -326,3 +326,25 @@ class Naviguate():
         )
 
         return self
+
+
+    def crawle_body(self, urlSearch: str):
+        """Use it to parse body"""
+
+        OneBodyParser().get_page_with(
+            ExampleUrl(urlSearch),
+            MyRequester(),
+            lambda result : ExampleScrapper().scrap_with(
+                result,
+                lambda result: ExampleScrapper().if_templatize_do(
+                        result,
+                        ScrapperTemplate(),
+                        lambda templateValue: Print().print_with(
+                            templateValue.bodyTemplatize,
+                            sys.stdout
+                    )
+                )
+            )
+        )
+
+        return self
