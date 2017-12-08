@@ -6,8 +6,7 @@ from typing import Callable, IO, cast
 import shutil
 import webbrowser
 from messager import Messager, MessagerTemplate
-
-from urllib.request import urlopen
+from crawler import *
 
 import attr
 
@@ -40,12 +39,6 @@ class UrlNormalizer(metaclass=abc.ABCMeta):
     def normalize_url(self, url: 'Url') -> 'UrlNormalizer':
         """Normalize url given"""
 
-class Requester(metaclass=abc.ABCMeta):
-
-    @abc.abstractmethod
-    def do_request_with(self, url: 'Url') -> 'Requester':
-        """Normalize url given"""
-
 class SimpleJsonFormatter(metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
@@ -53,7 +46,7 @@ class SimpleJsonFormatter(metaclass=abc.ABCMeta):
         """Message factoring"""
 
     @abc.abstractmethod
-    def format_body(self, body: 'BodyParser', action: Callable[['BodyParser'], None]) -> 'SimpleJsonFormatter':
+    def format_body(self, body: 'BodyValue', action: Callable[['BodyParser'], None]) -> 'SimpleJsonFormatter':
         """Format body of page HTML to Json"""
 
 class Url(metaclass=abc.ABCMeta):
@@ -77,15 +70,6 @@ class Url(metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def print_with_on(self, printer: 'Printer', stream: IO[str]) -> 'Url':
         """Print"""
-
-class BodyParser(metaclass=abc.ABCMeta):
-
-    @abc.abstractmethod
-    def format_body_json_with(self, body: str, jsonFormatter: 'SimpleJsonFormatter', action: Callable[[str], None]) -> 'BodyParser':
-        """Format body received to json"""
-
-    def get_page_with(self, url: 'Url', requester: 'Requester', action: Callable[[str], None]) -> 'BodyParser':
-        """Get page request as is"""
 
 class Browserify(metaclass=abc.ABCMeta):
 
@@ -241,7 +225,7 @@ class JsonFormatter(SimpleJsonFormatter):
 
         return self # Todo : use action to pass value and change header for caller to give value through action
 
-    def format_body(self, body: str, action: Callable[['BodyParser'], None]) -> 'SimpleJsonFormatter':
+    def format_body(self, body: 'BodyValue', action: Callable[['BodyParser'], None]) -> 'SimpleJsonFormatter':
 
         Messager().print_with_on(
             "Body type: " + str(type(body)),
@@ -249,7 +233,7 @@ class JsonFormatter(SimpleJsonFormatter):
             sys.stdout
         )
 
-        action(json.dumps({'body': str(body) }) + '\n')
+        action(json.dumps({'body': str(body.body) }) + '\n')
 
         return self
 
@@ -264,33 +248,6 @@ class Print(Printer):
     def print_with(self, string : str, stream: IO[str]) -> 'Printer':
 
         stream.write(string)
-
-        return self
-
-class OneBodyParser(BodyParser):
-
-    def get_page_with(self, url: 'Url', requester: 'Requester', action: Callable[[str], None]) -> 'BodyParser':
-        """Request page to get content"""
-
-        requester.do_request_with(url, lambda html: action(html))
-
-        return self
-
-    def format_body_json_with(self, body: str, jsonFormatter: 'SimpleJsonFormatter', action: Callable[[str], None]) -> 'BodyParser':
-        """Parse body content"""
-
-        jsonFormatter.format_body(body, lambda result: action(result))
-
-        return self
-
-
-class MyRequester(Requester):
-
-    def do_request_with(self, url: 'Url', action: Callable[[str], None]) -> 'Requester':
-
-        # Request to external site and whole information is here
-        html = urlopen(url._url).read()
-        action(html)
 
         return self
 
