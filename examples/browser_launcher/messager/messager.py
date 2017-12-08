@@ -1,5 +1,7 @@
-from typing import Callable, IO, cast
+#!/usr/bin/python3
+
 import abc
+from typing import Callable, IO, cast
 
 class MessageTemplating(metaclass=abc.ABCMeta):
 
