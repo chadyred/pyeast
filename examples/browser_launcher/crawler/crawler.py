@@ -25,6 +25,9 @@ class ScrapperTemplating(metaclass=abc.ABCMeta):
     def templatize_tree_with(self, bodyValue: 'BodyValue', action: Callable[['TemplateValue'], None]) -> 'ScrapperTemplating':
         """Scrap page"""
 
+    def dataframe_tree_with(self, bodyValue: 'BodyValue', action: Callable[['TemplateValue'], None]) -> 'ScrapperTemplating':
+        """Pandas dataframe with whole value"""
+
 class Scrapper(metaclass=abc.ABCMeta):
 
     def scrap_with(self, bodyValue: 'BodyValue', action: Callable[['BodyValue'], None]) -> 'Scrapper':
@@ -70,27 +73,32 @@ class ScrapperTemplate(ScrapperTemplating):
         templateValue = TemplateValue()
 
         title = bodyValue.tree.title.get_text()
+        pics = [pic.get('src') for pic in bodyValue.tree.findAll('img')]
+        titresSect = [title.get_text() for title in bodyValue.tree.findAll(('h1','h2','h3','h4','h5'))]
 
         templateValue.bodyTemplatize = "Title : " + str(bodyValue.tree.title) + " => " + title + '\n'
         templateValue.bodyTemplatize += "Image : " + str(bodyValue.tree.findAll('img')) + '\n'
-
-        pics = [pic.get('src') for pic in bodyValue.tree.findAll('img')]
-
         templateValue.bodyTemplatize += "Image link " + str(pics) + '\n'
-
-        titresSect = [title.get_text() for title in bodyValue.tree.findAll(('h1','h2','h3','h4','h5'))]
-
-        templateValue.bodyTemplatize += "Image link " + str(titresSect) + '\n'
-
-        # a = pd.Series([titresSect, pics])
-        # print(a)
-        # a = pd.DataFrame(a)
-        # print(a)
+        templateValue.bodyTemplatize += "Whole title" + str(titresSect) + '\n'
 
         action(templateValue)
 
         return self
 
+    def dataframe_tree_with(self, bodyValue: 'BodyValue', action: Callable[['TemplateValue'], None]) -> 'ScrapperTemplating':
+
+        templateValue = TemplateValue()
+        titresSect = [title.get_text() for title in bodyValue.tree.findAll(('h1','h2','h3','h4','h5'))]
+        pics = [pic.get('src') for pic in bodyValue.tree.findAll('img')]
+
+        matrix = pd.Series([titresSect, pics])
+        dataframe = pd.DataFrame(matrix)
+        dataframe = dataframe.rename(columns = {0:"titreSect", 1:"pics"})
+
+        templateValue.bodyTemplatize = dataframe
+        action(templateValue)
+
+        return self
 
 class ExampleScrapper(Scrapper):
 
@@ -106,6 +114,12 @@ class ExampleScrapper(Scrapper):
     def if_templatize_do(self, bodyValue: 'BodyValue', scrapperTemplate: 'ScrapperTemplating', action: Callable[['TemplateValue'], None]) -> 'Scrapper':
 
         scrapperTemplate.templatize_tree_with(bodyValue, lambda result : action(result))
+
+        return self
+
+    def if_templatize_with_dataframe_do(self, bodyValue: 'BodyValue', scrapperTemplate: 'ScrapperTemplating', action: Callable[['TemplateValue'], None]) -> 'Scrapper':
+
+        scrapperTemplate.dataframe_tree_with(bodyValue, lambda result : action(result))
 
         return self
 

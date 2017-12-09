@@ -327,7 +327,6 @@ class Naviguate():
 
         return self
 
-
     def crawle_body(self, urlSearch: str):
         """Use it to parse body"""
 
@@ -346,5 +345,27 @@ class Naviguate():
                 )
             )
         )
+
+    def crawle_body_dataframe(self, urlSearch: str):
+        """Use it to parse body"""
+
+        OneBodyParser().get_page_with(
+            ExampleUrl(urlSearch),
+            MyRequester(),
+            lambda result : ExampleScrapper().scrap_with(
+                result,
+                lambda result: ExampleScrapper().if_templatize_with_dataframe_do(
+                        result,
+                        ScrapperTemplate(),
+                        lambda templateValue:
+                            (lambda listImage : Print().print_with(
+                                str(listImage),
+                                sys.stdout)
+                            )(
+                                [templateValue.bodyTemplatize.iloc[1][0][i] for i in range(0, len(templateValue.bodyTemplatize.iloc[1][0]) - 1) ]
+                        )
+                    )
+                )
+            )
 
         return self
