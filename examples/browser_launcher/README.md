@@ -4,24 +4,18 @@ This is a simple browser launcher with East Oriented. We indicate your browser l
 
 * Naviguate().simple_browser(browser, url FQDN);
 * Naviguate().browse(browser, URI).
-* Naviguate().parse_body(Url)
+* Naviguate().parse_body(Url);
+* Naviguate().crawle_body(Url);
+* Naviguate().crawle_body_dataframe(Url).
 
-Two package are available:
-
-* pyeast : the core;
-* messager : for messaging (like notice).
-
-It could be useful to parse body through:
-
-* Naviguate().parse_body(Url).
-
-Two package are available:
+#### Package available:
 
 * pyeast : the core;
-* messager : for messaging (like notice).
+* messager : for messaging (like notice);
+* crawler : for crawl website.
 
-Todo: 
+#### Todo
 
-* More 'idempotent' for data encapsulation;
+* More 'idempotent' for data encapsulation (60 %);
 * Linux & mac package;
 * Windows exe.
