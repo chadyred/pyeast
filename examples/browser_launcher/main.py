@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/local/bin/python3
 
 from pyeast import *
 from messager import *
@@ -8,7 +8,7 @@ import attr
 
 if __name__ == '__main__':
     # Naviguate().format('google-chrome', '/foo/bar')
-    # Naviguate().simple_browser('firefox', 'http://rhcpfrance.com/pwette')
+    Naviguate().simple_browser('firefox', 'http://rhcpfrance.com')
     # Naviguate().simple_browser('firefox', 'http://bit.ly/')
     # Naviguate().simple_browser('firefox', 'http://doodle.com/pwette')
     # Naviguate().browse('google-chrome', 'google.com/foo/bar')
@@ -18,5 +18,5 @@ if __name__ == '__main__':
     # Naviguate().parse_body('http://google.com')
     # Naviguate().crawle_body('http://rhcpfrance.com')
     # Naviguate().crawle_body('https://giphy.com')
-    Naviguate().crawle_body_dataframe('https://rhcpfrance.com')
-    Naviguate().crawle_body_dataframe('https://giphy.com')
+    # Naviguate().crawle_body_dataframe('https://rhcpfrance.com')
+    # Naviguate().crawle_body_dataframe('https://giphy.com')
